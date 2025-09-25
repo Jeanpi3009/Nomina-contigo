@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="styles.css">
+  <title>NominaContigo</title>
+  <link rel="website icon" type="png" href="img/ChatGPT Image 25 sept 2025, 02_20_44 a.m..png">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+          <h1>Nomina Contigo</h1>
+          <p class="lead">Calculadora de nómina profesional — pestañas por contrato, bloques dinámicos, exportación PDF.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <nav class="tabs" role="tablist" aria-label="Tipos de contrato">
+      <button class="tab-btn active" data-tab="indef">Término Indefinido</button>
+      <button class="tab-btn" data-tab="fijo">Término Fijo</button>
+      <button class="tab-btn" data-tab="obra">Obra / Labor</button>
+      <button class="tab-btn" data-tab="ocas">Ocasional / Transitorio</button>
+      <button class="tab-btn" data-tab="apren">Aprendizaje</button>
+      <button class="tab-btn" data-tab="horas">Contrato por Horas</button>
+    </nav>
+
+    <!-- Panel indefinido -->
+    <section id="indef" class="panel active" role="tabpanel">
+      <h2>💼 Término Indefinido</h2>
+      <form class="form" onsubmit="return false;">
+        <div class="grid">
+          <div class="card">
+            <h3>🏢 Empresa / periodo</h3>
+            <label>Razón social<input id="empresa-indef" type="text" placeholder="Ej. Mi Empresa S.A.S."></label>
+            <label>NIT<input id="nit-indef" type="text" placeholder="123456789-0"></label>
+            <label>Periodo<select id="periodo-indef"><option value="mensual">Mensual</option><option value="quincenal">Quincenal</option></select></label>
+            <label>Cuenta bancaria<input id="cuenta-indef" type="text" placeholder="Ahorros · 00012345678"></label>
+          </div>
+
+          <div class="card">
+            <h3>👤 Empleado</h3>
+            <label>Nombre completo<input id="nombre-indef" type="text"></label>
+            <label>Identificación<input id="id-indef" type="text"></label>
+            <label>Fecha (turno o mes)<input id="fecha-indef" type="date"></label>
+            <label>Hora inicio jornada<input id="horaInicio-indef" type="time"></label>
+            <label>Hora fin jornada<input id="horaFin-indef" type="time"></label>
+          </div>
+
+          <div class="card">
+            <h3>💰 Salario y conceptos</h3>
+            <label>Salario base mensual (COP)<input id="salario-indef" type="number" min="0" step="1" placeholder="ej. 2000000"></label>
+            <label><input type="checkbox" id="chkAux-indef"> Incluir Auxilio de transporte</label>
+            <label>Bonificaciones (COP)<input id="bonos-indef" type="number" min="0" value="0"></label>
+            <label>Comisiones (COP)<input id="comis-indef" type="number" min="0" value="0"></label>
+            <label>Viáticos permanentes (COP)<input id="viaticos-indef" type="number" min="0" value="0"></label>
+          </div>
+        </div>
+
+        <!-- Bloques -->
+        <div class="card">
+          <h3>🕒 Bloques de recargos / horas (puedes añadir varios)</h3>
+          <div id="blocks-indef" class="blocks"></div>
+          <div class="row">
+            <button class="ghost" type="button" onclick="addBlock('indef')">➕ Agregar bloque</button>
+            <small class="muted">Cada bloque: tipo, hora inicio y hora fin — se calcula por separado.</small>
+          </div>
+        </div>
+
+        <!-- Checkboxes prestaciones -->
+        <div class="card">
+          <h3>🛡️ Prestaciones y Seguridad Social</h3>
+          <label><input type="checkbox" id="cesantias-indef"> Cesantías</label>
+          <label><input type="checkbox" id="intereses-indef"> Intereses Cesantías</label>
+          <label><input type="checkbox" id="prima-indef"> Prima</label>
+          <label><input type="checkbox" id="vacaciones-indef"> Vacaciones</label>
+          <label><input type="checkbox" id="seguridad-indef"> Seguridad Social</label>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" onclick="compute('indef')">🧮 Calcular</button>
+          <button type="reset" onclick="clearPanel('indef')">🗑️ Limpiar</button>
+          <button type="button" onclick="exportPDF('indef')">📄 Exportar PDF</button>
+        </div>
+      </form>
+
+      <div id="out-indef" class="output"></div>
+    </section>
+
+    <!-- Panel fijo -->
+    <section id="fijo" class="panel" role="tabpanel">
+      <h2>📅 Término Fijo</h2>
+      <form class="form" onsubmit="return false;">
+        <div class="grid">
+          <div class="card">
+            <h3>🏢 Empresa / periodo</h3>
+            <label>Razón social<input id="empresa-fijo" type="text"></label>
+            <label>NIT<input id="nit-fijo" type="text"></label>
+            <label>Periodo<select id="periodo-fijo"><option value="mensual">Mensual</option><option value="quincenal">Quincenal</option></select></label>
+            <label>Cuenta bancaria<input id="cuenta-fijo" type="text"></label>
+          </div>
+
+          <div class="card">
+            <h3>👤 Empleado</h3>
+            <label>Nombre<input id="nombre-fijo" type="text"></label>
+            <label>ID<input id="id-fijo" type="text"></label>
+            <label>Fecha<input id="fecha-fijo" type="date"></label>
+            <label>Hora inicio jornada<input id="horaInicio-fijo" type="time"></label>
+            <label>Hora fin jornada<input id="horaFin-fijo" type="time"></label>
+          </div>
+
+          <div class="card">
+            <h3>💰 Salario</h3>
+            <label>Salario base mensual<input id="salario-fijo" type="number" min="0"></label>
+            <label><input type="checkbox" id="chkAux-fijo"> Incluir Auxilio de transporte</label>
+            <label>Bonos<input id="bonos-fijo" type="number" min="0" value="0"></label>
+            <label>Comisiones<input id="comis-fijo" type="number" min="0" value="0"></label>
+            <label>Viáticos<input id="viaticos-fijo" type="number" min="0" value="0"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🕒 Bloques de recargos / horas</h3>
+          <div id="blocks-fijo" class="blocks"></div>
+          <div class="row"><button class="ghost" type="button" onclick="addBlock('fijo')">➕ Agregar bloque</button></div>
+        </div>
+
+        <div class="card">
+          <h3>🛡️ Prestaciones y Seguridad Social</h3>
+          <label><input type="checkbox" id="cesantias-fijo"> Cesantías</label>
+          <label><input type="checkbox" id="intereses-fijo"> Intereses Cesantías</label>
+          <label><input type="checkbox" id="prima-fijo"> Prima</label>
+          <label><input type="checkbox" id="vacaciones-fijo"> Vacaciones</label>
+          <label><input type="checkbox" id="seguridad-fijo"> Seguridad Social</label>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" onclick="compute('fijo')">🧮 Calcular</button>
+          <button type="reset" onclick="clearPanel('fijo')">🗑️ Limpiar</button>
+          <button type="button" onclick="exportPDF('fijo')">📄 Exportar PDF</button>
+        </div>
+      </form>
+
+      <div id="out-fijo" class="output"></div>
+    </section>
+
+    <!-- Panel obra -->
+    <section id="obra" class="panel" role="tabpanel">
+      <h2>🏗️ Obra / Labor</h2>
+      <form class="form" onsubmit="return false;">
+        <div class="grid">
+          <div class="card">
+            <h3>🏢 Empresa</h3>
+            <label>Razón social<input id="empresa-obra" type="text"></label>
+            <label>NIT<input id="nit-obra" type="text"></label>
+          </div>
+
+          <div class="card">
+            <h3>👤 Empleado</h3>
+            <label>Nombre<input id="nombre-obra" type="text"></label>
+            <label>ID<input id="id-obra" type="text"></label>
+            <label>Fecha<input id="fecha-obra" type="date"></label>
+          </div>
+
+          <div class="card">
+            <h3>💰 Salario</h3>
+            <label>Salario base mensual<input id="salario-obra" type="number" min="0"></label>
+            <label><input type="checkbox" id="chkAux-obra"> Incluir Auxilio de transporte</label>
+            <label>Bonos<input id="bonos-obra" type="number" min="0" value="0"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🕒 Bloques de recargos / horas</h3>
+          <div id="blocks-obra" class="blocks"></div>
+          <div class="row"><button class="ghost" type="button" onclick="addBlock('obra')">➕ Agregar bloque</button></div>
+        </div>
+
+        <div class="card">
+          <h3>🛡️ Prestaciones y Seguridad Social</h3>
+          <label><input type="checkbox" id="cesantias-obra"> Cesantías</label>
+          <label><input type="checkbox" id="intereses-obra"> Intereses Cesantías</label>
+          <label><input type="checkbox" id="prima-obra"> Prima</label>
+          <label><input type="checkbox" id="vacaciones-obra"> Vacaciones</label>
+          <label><input type="checkbox" id="seguridad-obra"> Seguridad Social</label>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" onclick="compute('obra')">🧮 Calcular</button>
+          <button type="reset" onclick="clearPanel('obra')">🗑️ Limpiar</button>
+          <button type="button" onclick="exportPDF('obra')">📄 Exportar PDF</button>
+        </div>
+      </form>
+
+      <div id="out-obra" class="output"></div>
+    </section>
+
+    <!-- Panel ocasional -->
+    <section id="ocas" class="panel" role="tabpanel">
+      <h2>⚡ Ocasional / Transitorio</h2>
+      <form class="form" onsubmit="return false;">
+        <div class="grid">
+          <div class="card">
+            <h3>🏢 Empresa</h3>
+            <label>Razón social<input id="empresa-ocas" type="text"></label>
+            <label>NIT<input id="nit-ocas" type="text"></label>
+          </div>
+
+          <div class="card">
+            <h3>👤 Empleado / Pago</h3>
+            <label>Nombre<input id="nombre-ocas" type="text"></label>
+            <label>ID<input id="id-ocas" type="text"></label>
+            <label>Valor acordado (COP)<input id="salario-ocas" type="number" min="0"></label>
+            <label>Fecha<input id="fecha-ocas" type="date"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🛡️ Prestaciones y Seguridad Social</h3>
+          <label><input type="checkbox" id="cesantias-ocas"> Cesantías</label>
+          <label><input type="checkbox" id="intereses-ocas"> Intereses Cesantías</label>
+          <label><input type="checkbox" id="prima-ocas"> Prima</label>
+          <label><input type="checkbox" id="vacaciones-ocas"> Vacaciones</label>
+          <label><input type="checkbox" id="seguridad-ocas"> Seguridad Social</label>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" onclick="compute('ocas')">🧮 Calcular</button>
+          <button type="reset" onclick="clearPanel('ocas')">🗑️ Limpiar</button>
+          <button type="button" onclick="exportPDF('ocas')">📄 Exportar PDF</button>
+        </div>
+      </form>
+
+      <div id="out-ocas" class="output"></div>
+    </section>
+
+    <!-- Panel aprendizaje -->
+    <section id="apren" class="panel" role="tabpanel">
+      <h2>🎓 Contrato de Aprendizaje</h2>
+      <form class="form" onsubmit="return false;">
+        <div class="grid">
+          <div class="card">
+            <h3>🏢 Empresa</h3>
+            <label>Razón social<input id="empresa-apren" type="text"></label>
+            <label>NIT<input id="nit-apren" type="text"></label>
+          </div>
+
+          <div class="card">
+            <h3>🧑‍🎓 Aprendiz</h3>
+            <label>Nombre<input id="nombre-apren" type="text"></label>
+            <label>Etapa
+              <select id="etapa-apren">
+                <option value="lectiva">Lectiva (75% SMLV)</option>
+                <option value="productiva">Productiva (100% SMLV)</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🛡️ Prestaciones y Seguridad Social</h3>
+          <label><input type="checkbox" id="cesantias-apren"> Cesantías</label>
+          <label><input type="checkbox" id="intereses-apren"> Intereses Cesantías</label>
+          <label><input type="checkbox" id="prima-apren"> Prima</label>
+          <label><input type="checkbox" id="vacaciones-apren"> Vacaciones</label>
+          <label><input type="checkbox" id="seguridad-apren"> Seguridad Social</label>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" onclick="compute('apren')">🧮 Calcular</button>
+          <button type="reset" onclick="clearPanel('apren')">🗑️ Limpiar</button>
+          <button type="button" onclick="exportPDF('apren')">📄 Exportar PDF</button>
+        </div>
+      </form>
+
+      <div id="out-apren" class="output"></div>
+    </section>
+
+    <!-- Panel horas -->
+    <section id="horas" class="panel" role="tabpanel">
+      <h2>⏱️ Contrato por Horas</h2>
+      <form class="form" onsubmit="return false;">
+        <div class="grid">
+          <div class="card">
+            <h3>🏢 Empresa</h3>
+            <label>Razón social<input id="empresa-horas" type="text"></label>
+            <label>NIT<input id="nit-horas" type="text"></label>
+          </div>
+
+          <div class="card">
+            <h3>👤 Empleado / Turno</h3>
+            <label>Valor hora (COP)<input id="valorHora-horas" type="number" min="0"></label>
+            <label>Cantidad de horas<input id="cantHoras-horas" type="number" min="0" value="0"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🕒 Bloques de recargos / horas (opcional)</h3>
+          <div id="blocks-horas" class="blocks"></div>
+          <div class="row"><button class="ghost" type="button" onclick="addBlock('horas')">➕ Agregar bloque</button></div>
+        </div>
+
+        <div class="card">
+          <h3>🛡️ Prestaciones y Seguridad Social</h3>
+          <label><input type="checkbox" id="cesantias-horas"> Cesantías</label>
+          <label><input type="checkbox" id="intereses-horas"> Intereses Cesantías</label>
+          <label><input type="checkbox" id="prima-horas"> Prima</label>
+          <label><input type="checkbox" id="vacaciones-horas"> Vacaciones</label>
+          <label><input type="checkbox" id="seguridad-horas"> Seguridad Social</label>
+        </div>
+
+        <div class="panel-actions">
+          <button type="button" onclick="compute('horas')">🧮 Calcular</button>
+          <button type="reset" onclick="clearPanel('horas')">🗑️ Limpiar</button>
+          <button type="button" onclick="exportPDF('horas')">📄 Exportar PDF</button>
+        </div>
+      </form>
+
+      <div id="out-horas" class="output"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <small>Nota: cálculo de acuerdo con porcentajes legales vigentes en Colombia hasta 2025. Proyecto demo. Autores Jean pierre loaiza y Brigitte Samantha castañeda</small>
+    </div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>
