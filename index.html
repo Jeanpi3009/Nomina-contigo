@@ -10,6 +10,9 @@
 <body>
   <header class="site-header">
     <div class="wrap">
+      <div class="logo-container">
+        <img src="img/ChatGPT Image 25 sept 2025, 02_20_44 a.m..png" alt="Nomina Contigo" class="logo-header">
+        <div class="logo-text">
           <h1>Nomina Contigo</h1>
           <p class="lead">Calculadora de nómina profesional — pestañas por contrato, bloques dinámicos, exportación PDF.</p>
         </div>
@@ -44,9 +47,49 @@
             <h3>👤 Empleado</h3>
             <label>Nombre completo<input id="nombre-indef" type="text"></label>
             <label>Identificación<input id="id-indef" type="text"></label>
-            <label>Fecha (turno o mes)<input id="fecha-indef" type="date"></label>
-            <label>Hora inicio jornada<input id="horaInicio-indef" type="time"></label>
-            <label>Hora fin jornada<input id="horaFin-indef" type="time"></label>
+            
+            <label>Tipo de cálculo
+              <select id="tipoPeriodo-indef">
+                <option value="dia">Día específico</option>
+                <option value="rango">Rango de fechas</option>
+                <option value="mes">Mes completo</option>
+              </select>
+            </label>
+
+            <!-- Día específico -->
+            <div class="fecha-campo" data-tipo="dia">
+              <label>Fecha<input id="fecha-indef" type="date"></label>
+            </div>
+
+            <!-- Rango de fechas -->
+            <div class="fecha-campo" data-tipo="rango" style="display:none;">
+              <label>Fecha inicio<input id="fechaInicio-indef" type="date"></label>
+              <label>Fecha fin<input id="fechaFin-indef" type="date"></label>
+            </div>
+
+            <!-- Mes completo -->
+            <div class="fecha-campo" data-tipo="mes" style="display:none;">
+              <label>Mes<input id="mes-indef" type="month"></label>
+            </div>
+
+            <!-- Jornada y descanso (solo para día específico) -->
+            <div class="jornada-campo" style="display:none;">
+              <label>Hora inicio jornada<input id="horaInicio-indef" type="time"></label>
+              <label>Hora fin jornada<input id="horaFin-indef" type="time"></label>
+              <label>Tiempo de descanso
+                <select id="descanso-indef">
+                  <option value="0">Sin descanso</option>
+                  <option value="5">5 minutos</option>
+                  <option value="15">15 minutos</option>
+                  <option value="30">30 minutos</option>
+                  <option value="45">45 minutos</option>
+                  <option value="60">1 hora</option>
+                  <option value="90">1.5 horas</option>
+                  <option value="120">2 horas</option>
+                  <option value="180">3 horas</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <div class="card">
@@ -106,9 +149,49 @@
             <h3>👤 Empleado</h3>
             <label>Nombre<input id="nombre-fijo" type="text"></label>
             <label>ID<input id="id-fijo" type="text"></label>
-            <label>Fecha<input id="fecha-fijo" type="date"></label>
-            <label>Hora inicio jornada<input id="horaInicio-fijo" type="time"></label>
-            <label>Hora fin jornada<input id="horaFin-fijo" type="time"></label>
+            
+            <label>Tipo de cálculo
+              <select id="tipoPeriodo-fijo">
+                <option value="dia">Día específico</option>
+                <option value="rango">Rango de fechas</option>
+                <option value="mes">Mes completo</option>
+              </select>
+            </label>
+
+            <!-- Día específico -->
+            <div class="fecha-campo" data-tipo="dia">
+              <label>Fecha<input id="fecha-fijo" type="date"></label>
+            </div>
+
+            <!-- Rango de fechas -->
+            <div class="fecha-campo" data-tipo="rango" style="display:none;">
+              <label>Fecha inicio<input id="fechaInicio-fijo" type="date"></label>
+              <label>Fecha fin<input id="fechaFin-fijo" type="date"></label>
+            </div>
+
+            <!-- Mes completo -->
+            <div class="fecha-campo" data-tipo="mes" style="display:none;">
+              <label>Mes<input id="mes-fijo" type="month"></label>
+            </div>
+
+            <!-- Jornada y descanso (solo para día específico) -->
+            <div class="jornada-campo" style="display:none;">
+              <label>Hora inicio jornada<input id="horaInicio-fijo" type="time"></label>
+              <label>Hora fin jornada<input id="horaFin-fijo" type="time"></label>
+              <label>Tiempo de descanso
+                <select id="descanso-fijo">
+                  <option value="0">Sin descanso</option>
+                  <option value="5">5 minutos</option>
+                  <option value="15">15 minutos</option>
+                  <option value="30">30 minutos</option>
+                  <option value="45">45 minutos</option>
+                  <option value="60">1 hora</option>
+                  <option value="90">1.5 horas</option>
+                  <option value="120">2 horas</option>
+                  <option value="180">3 horas</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <div class="card">
@@ -161,7 +244,49 @@
             <h3>👤 Empleado</h3>
             <label>Nombre<input id="nombre-obra" type="text"></label>
             <label>ID<input id="id-obra" type="text"></label>
-            <label>Fecha<input id="fecha-obra" type="date"></label>
+            
+            <label>Tipo de cálculo
+              <select id="tipoPeriodo-obra">
+                <option value="dia">Día específico</option>
+                <option value="rango">Rango de fechas</option>
+                <option value="mes">Mes completo</option>
+              </select>
+            </label>
+
+            <!-- Día específico -->
+            <div class="fecha-campo" data-tipo="dia">
+              <label>Fecha<input id="fecha-obra" type="date"></label>
+            </div>
+
+            <!-- Rango de fechas -->
+            <div class="fecha-campo" data-tipo="rango" style="display:none;">
+              <label>Fecha inicio<input id="fechaInicio-obra" type="date"></label>
+              <label>Fecha fin<input id="fechaFin-obra" type="date"></label>
+            </div>
+
+            <!-- Mes completo -->
+            <div class="fecha-campo" data-tipo="mes" style="display:none;">
+              <label>Mes<input id="mes-obra" type="month"></label>
+            </div>
+
+            <!-- Jornada y descanso (solo para día específico) -->
+            <div class="jornada-campo" style="display:none;">
+              <label>Hora inicio jornada<input id="horaInicio-obra" type="time"></label>
+              <label>Hora fin jornada<input id="horaFin-obra" type="time"></label>
+              <label>Tiempo de descanso
+                <select id="descanso-obra">
+                  <option value="0">Sin descanso</option>
+                  <option value="5">5 minutos</option>
+                  <option value="15">15 minutos</option>
+                  <option value="30">30 minutos</option>
+                  <option value="45">45 minutos</option>
+                  <option value="60">1 hora</option>
+                  <option value="90">1.5 horas</option>
+                  <option value="120">2 horas</option>
+                  <option value="180">3 horas</option>
+                </select>
+              </label>
+            </div>
           </div>
 
           <div class="card">

@@ -82,30 +82,40 @@ function diffHours(start, end) {
   return Math.round(diff * 100) / 100;
 }
 
+// 🔹 FUNCIÓN CORREGIDA: Detecta domingo/festivo en zona horaria local
 function isDominicalOrFestivo(dateStr) {
   if (!dateStr) return false;
-  const d = new Date(dateStr);
-  const iso = dateStr;
-  const domingo = d.getDay() === 0;
-  const festivo = FESTIVOS_2025.includes(iso);
-  return domingo || festivo;
+  
+  // Convertir a fecha local (evita problema de UTC)
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const fechaLocal = new Date(year, month - 1, day); // Mes en JS es 0-11
+  const esDomingo = fechaLocal.getDay() === 0;
+  const esFestivo = FESTIVOS_2025.includes(dateStr);
+  
+  return esDomingo || esFestivo;
 }
 
+// 🔹 FUNCIÓN CORREGIDA: Aplica recargos correctos para domingos/festivos
 function pctForType(tipo, fechaStr) {
+  const esFestivo = isDominicalOrFestivo(fechaStr);
   const fecha = fechaStr ? new Date(fechaStr) : new Date();
+
   switch (tipo) {
-    case 'extra_diurna': return 0.25;
-    case 'extra_nocturna': return 0.75;
-    case 'recargo_nocturno': return 0.35;
+    case 'extra_diurna':
+      return esFestivo ? 1.00 : 0.25;
+    case 'extra_nocturna':
+      return esFestivo ? 1.50 : 0.75;
+    case 'recargo_nocturno':
+      return 0.35;
     case 'recargo_dominical':
       if (fecha >= DOM_AUM_100) return 1.00;
       if (fecha >= DOM_AUM_90) return 0.90;
       if (fecha >= DOM_AUM_80) return 0.80;
       return 0.75;
-    case 'recargo_noct_dom': return 1.10;
-    case 'extra_dom_diurna': return 1.00;
-    case 'extra_dom_nocturna': return 1.50;
-    default: return 0;
+    case 'recargo_noct_dom':
+      return esFestivo ? 1.50 : 1.10;
+    default:
+      return 0;
   }
 }
 
@@ -121,13 +131,11 @@ function addBlock(contract) {
   wrapper.className = 'rec-block';
   wrapper.innerHTML = `
     <select class="rec-tipo">
-      <option value="extra_diurna">Hora extra diurna (25%)</option>
-      <option value="extra_nocturna">Hora extra nocturna (75%)</option>
+      <option value="extra_diurna">Hora extra diurna (25% / 100% festivo)</option>
+      <option value="extra_nocturna">Hora extra nocturna (75% / 150% festivo)</option>
       <option value="recargo_nocturno">Recargo nocturno (35%)</option>
       <option value="recargo_dominical">Recargo dominical/festivo (75%→80/90/100)</option>
-      <option value="recargo_noct_dom">Recargo nocturno + dominical (110%)</option>
-      <option value="extra_dom_diurna">Hora extra dominical diurna (100%)</option>
-      <option value="extra_dom_nocturna">Hora extra dominical nocturna (150%)</option>
+      <option value="recargo_noct_dom">Recargo nocturno + dominical (110% / 150% festivo)</option>
     </select>
     <label>Inicio <input type="time" class="rec-inicio"></label>
     <label>Fin <input type="time" class="rec-fin"></label>
@@ -145,7 +153,6 @@ function clearPanel(contract) {
   if (blocksContainer) blocksContainer.innerHTML = '';
   const output = document.getElementById(`out-${contract}`);
   if (output) output.innerHTML = '';
-  // Limpiar errores visuales
   document.querySelectorAll('.campo-error').forEach(el => {
     el.classList.remove('campo-error');
   });
@@ -211,12 +218,8 @@ function mostrarMensajeGlobal(mensaje, campoId = null, duracion = 5000) {
   
   if (textoSpan) {
     textoSpan.textContent = mensaje;
-    
-    // Eliminar enlace anterior si existe
     const enlaceAnterior = contenedor.querySelector('.enlace-campo');
     if (enlaceAnterior) enlaceAnterior.remove();
-    
-    // Agregar enlace si hay campoId
     if (campoId) {
       const enlace = document.createElement('a');
       enlace.href = '#';
@@ -241,25 +244,38 @@ function mostrarMensajeGlobal(mensaje, campoId = null, duracion = 5000) {
   }
   
   contenedor.style.display = 'block';
-
-  botonCerrar.onclick = () => {
-    contenedor.style.display = 'none';
-  };
-
+  botonCerrar.onclick = () => contenedor.style.display = 'none';
   clearTimeout(mostrarMensajeGlobal.timer);
   mostrarMensajeGlobal.timer = setTimeout(() => {
     contenedor.style.display = 'none';
   }, duracion);
 }
 
+// 🔹 NUEVA FUNCIÓN: Mostrar/ocultar campos según tipo de período
+function actualizarCamposPeriodo(contract) {
+  const tipo = el(`tipoPeriodo-${contract}`)?.value || 'dia';
+  document.querySelectorAll(`#${contract} .fecha-campo`).forEach(div => {
+    div.style.display = div.dataset.tipo === tipo ? 'block' : 'none';
+  });
+  const jornadaDiv = document.querySelector(`#${contract} .jornada-campo`);
+  if (jornadaDiv) {
+    jornadaDiv.style.display = (tipo === 'dia') ? 'block' : 'none';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  ['indef', 'fijo', 'obra'].forEach(contract => {
+    const select = el(`tipoPeriodo-${contract}`);
+    if (select) {
+      select.addEventListener('change', () => actualizarCamposPeriodo(contract));
+      actualizarCamposPeriodo(contract);
+    }
+  });
+});
+
 // Validar campos obligatorios por tipo de contrato
 function validarCampos(contract) {
-  // Limpiar errores previos
-  document.querySelectorAll('.campo-error').forEach(el => {
-    el.classList.remove('campo-error');
-  });
-
-  // Función para resaltar un campo
+  document.querySelectorAll('.campo-error').forEach(el => el.classList.remove('campo-error'));
   const resaltarCampo = (id) => {
     const campo = el(id);
     if (campo) {
@@ -273,8 +289,6 @@ function validarCampos(contract) {
       campo.addEventListener('change', removerError);
     }
   };
-
-  // Función auxiliar para verificar si un campo está vacío
   const req = (id, nombre) => {
     const val = el(id)?.value?.trim();
     if (isEmpty(val)) {
@@ -284,7 +298,6 @@ function validarCampos(contract) {
     }
     return true;
   };
-
   const numReq = (id, nombre) => {
     const val = parseFloat(el(id)?.value);
     if (isNaN(val) || val <= 0) {
@@ -294,7 +307,6 @@ function validarCampos(contract) {
     }
     return true;
   };
-
   const dateReq = (id, nombre) => {
     const val = el(id)?.value;
     if (!val) {
@@ -304,49 +316,79 @@ function validarCampos(contract) {
     }
     return true;
   };
-
-  switch (contract) {
-    case 'indef':
-    case 'fijo':
-      return req(`empresa-${contract}`, 'Razón social') &&
-             req(`nit-${contract}`, 'NIT') &&
-             req(`nombre-${contract}`, 'Nombre completo') &&
-             req(`id-${contract}`, 'Identificación') &&
-             dateReq(`fecha-${contract}`, 'Fecha') &&
-             req(`horaInicio-${contract}`, 'Hora inicio jornada') &&
-             req(`horaFin-${contract}`, 'Hora fin jornada') &&
-             numReq(`salario-${contract}`, 'Salario base mensual');
-
-    case 'obra':
-      return req(`empresa-obra`, 'Razón social') &&
-             req(`nit-obra`, 'NIT') &&
-             req(`nombre-obra`, 'Nombre') &&
-             req(`id-obra`, 'Identificación') &&
-             dateReq(`fecha-obra`, 'Fecha') &&
-             numReq(`salario-obra`, 'Salario base mensual');
-
-    case 'ocas':
-      return req(`empresa-ocas`, 'Razón social') &&
-             req(`nit-ocas`, 'NIT') &&
-             req(`nombre-ocas`, 'Nombre') &&
-             req(`id-ocas`, 'Identificación') &&
-             dateReq(`fecha-ocas`, 'Fecha') &&
-             numReq(`salario-ocas`, 'Valor acordado');
-
-    case 'apren':
-      return req(`empresa-apren`, 'Razón social') &&
-             req(`nit-apren`, 'NIT') &&
-             req(`nombre-apren`, 'Nombre');
-
-    case 'horas':
-      return req(`empresa-horas`, 'Razón social') &&
-             req(`nit-horas`, 'NIT') &&
-             numReq(`valorHora-horas`, 'Valor hora') &&
-             numReq(`cantHoras-horas`, 'Cantidad de horas');
-
-    default:
-      return true;
+  const tipoPeriodo = el(`tipoPeriodo-${contract}`)?.value || 'dia';
+  if (!req(`empresa-${contract}`, 'Razón social')) return false;
+  if (!req(`nit-${contract}`, 'NIT')) return false;
+  if (!req(`nombre-${contract}`, 'Nombre completo')) return false;
+  if (!req(`id-${contract}`, 'Identificación')) return false;
+  if (tipoPeriodo === 'dia') {
+    if (!dateReq(`fecha-${contract}`, 'Fecha')) return false;
+    if (!req(`horaInicio-${contract}`, 'Hora inicio jornada')) return false;
+    if (!req(`horaFin-${contract}`, 'Hora fin jornada')) return false;
+  } else if (tipoPeriodo === 'rango') {
+    if (!dateReq(`fechaInicio-${contract}`, 'Fecha inicio')) return false;
+    if (!dateReq(`fechaFin-${contract}`, 'Fecha fin')) return false;
+  } else if (tipoPeriodo === 'mes') {
+    if (!req(`mes-${contract}`, 'Mes')) return false;
   }
+  if (!numReq(`salario-${contract}`, 'Salario base mensual')) return false;
+  return true;
+}
+
+// 🔹 NUEVA FUNCIÓN: Detectar horas extras por jornada > 8h (con descanso)
+function calcularHorasExtrasAutomaticas(horaInicio, horaFin, descansoMin, fecha) {
+  if (!horaInicio || !horaFin) return null;
+  let horasBrutas = diffHours(horaInicio, horaFin);
+  const descansoHoras = descansoMin / 60;
+  const horasNetas = Math.max(0, horasBrutas - descansoHoras);
+  if (horasNetas <= 8) return null;
+  const inicioMin = toMinutes(horaInicio);
+  const finMin = toMinutes(horaFin);
+  const esDiurna = (inicioMin >= 6*60 && finMin <= 22*60);
+  const tipo = esDiurna ? 'extra_diurna' : 'extra_nocturna';
+  return {
+    horas: horasNetas - 8,
+    tipo,
+    inicio: horaInicio,
+    fin: horaFin
+  };
+}
+
+// 🔹 FUNCIÓN CORREGIDA: Calcular recargo con distinción de tipo de día (zona horaria local)
+function calcularRecargoConTipo(horaInicio, horaFin, descansoMin, fecha) {
+  if (!horaInicio || !horaFin || !fecha) return null;
+
+  // Convertir a fecha local
+  const [year, month, day] = fecha.split('-').map(Number);
+  const fechaLocal = new Date(year, month - 1, day);
+  const esDomingo = fechaLocal.getDay() === 0;
+  const esFestivo = FESTIVOS_2025.includes(fecha);
+  
+  if (!esDomingo && !esFestivo) return null;
+
+  let horasBrutas = diffHours(horaInicio, horaFin);
+  const descansoHoras = descansoMin / 60;
+  const horasNetas = Math.max(0, horasBrutas - descansoHoras);
+  const horasOrdinarias = Math.min(8, horasNetas);
+
+  if (horasOrdinarias <= 0) return null;
+
+  let tipoRecargo;
+  if (esDomingo && esFestivo) {
+    tipoRecargo = 'domingoFestivo';
+  } else if (esDomingo) {
+    tipoRecargo = 'soloDomingo';
+  } else {
+    tipoRecargo = 'soloFestivo';
+  }
+
+  return {
+    horas: horasOrdinarias,
+    tipo: 'recargo_dominical',
+    tipoEtiqueta: tipoRecargo,
+    inicio: horaInicio,
+    fin: horaFin
+  };
 }
 
 /* ------- CALCULO PRINCIPAL ------- */
@@ -371,7 +413,16 @@ function compute(contract) {
   const nit = getVal(`nit-${contract}`) || '';
   const nombre = getVal(`nombre-${contract}`) || '';
   const identificacion = getVal(`id-${contract}`) || '';
-  const fecha = getVal(`fecha-${contract}`) || '';
+
+  const tipoPeriodo = getVal(`tipoPeriodo-${contract}`) || 'dia';
+  let fechaReferencia = '';
+  if (tipoPeriodo === 'dia') {
+    fechaReferencia = getVal(`fecha-${contract}`);
+  } else if (tipoPeriodo === 'rango') {
+    fechaReferencia = getVal(`fechaInicio-${contract}`);
+  } else if (tipoPeriodo === 'mes') {
+    fechaReferencia = '';
+  }
 
   let salarioMensual = 0;
   let salarioPeriodo = 0;
@@ -415,14 +466,58 @@ function compute(contract) {
   let detalles = [];
   let totalExtras = 0;
 
-  if (contract === 'horas') {
-    const valorHoraUser = Number(el('valorHora-horas')?.value || 0);
-    const horasTrab = Number(el('cantHoras-horas')?.value || 0);
-    const pago = Math.round(horasTrab * valorHoraUser);
-    detalles.push({ concept: 'Horas trabajadas', horas: horasTrab, vunit: valorHoraUser, total: pago });
-    totalExtras += pago;
+  // 🔹 CÁLCULO DE RECARGOS PARA DÍA ESPECÍFICO (domingos/festivos)
+  if (tipoPeriodo === 'dia' && ['indef', 'fijo', 'obra'].includes(contract)) {
+    const horaInicio = getVal(`horaInicio-${contract}`);
+    const horaFin = getVal(`horaFin-${contract}`);
+    const descansoMin = parseInt(getVal(`descanso-${contract}`) || 0);
+    const fecha = fechaReferencia;
+
+    // --- 1. Recargo con distinción de tipo de día ---
+    const recargoDom = calcularRecargoConTipo(horaInicio, horaFin, descansoMin, fecha);
+    if (recargoDom) {
+      const pct = pctForType(recargoDom.tipo, fecha);
+      const pagoRecargo = Math.round(recargoDom.horas * valorHora * pct);
+      totalExtras += pagoRecargo;
+      
+      // Definir etiqueta según el tipo
+      let concepto;
+      if (recargoDom.tipoEtiqueta === 'domingoFestivo') {
+        concepto = 'Recargo dominical + festivo (horas ordinarias)';
+      } else if (recargoDom.tipoEtiqueta === 'soloDomingo') {
+        concepto = 'Recargo dominical (horas ordinarias)';
+      } else {
+        concepto = 'Recargo festivo (horas ordinarias)';
+      }
+      
+      detalles.push({
+        concept: concepto,
+        horas: recargoDom.horas,
+        vunit: valorHora,
+        pct,
+        total: pagoRecargo,
+        raw: { ini: horaInicio, fin: horaFin, tipo: recargoDom.tipo }
+      });
+    }
+
+    // --- 2. Horas extras automáticas ---
+    const extrasAuto = calcularHorasExtrasAutomaticas(horaInicio, horaFin, descansoMin, fecha);
+    if (extrasAuto) {
+      const pct = pctForType(extrasAuto.tipo, fecha);
+      const pagoExtra = Math.round(extrasAuto.horas * valorHora * (1 + pct));
+      totalExtras += pagoExtra;
+      detalles.push({
+        concept: `Hora extra automática (${descriptorFor(extrasAuto.tipo)})`,
+        horas: extrasAuto.horas,
+        vunit: valorHora,
+        pct,
+        total: pagoExtra,
+        raw: { ini: horaInicio, fin: horaFin, tipo: extrasAuto.tipo, auto: true }
+      });
+    }
   }
 
+  // Bloques manuales (agregados por el usuario)
   blockEls.forEach(b => {
     const tipo = b.querySelector('.rec-tipo').value;
     const ini = b.querySelector('.rec-inicio').value;
@@ -430,7 +525,7 @@ function compute(contract) {
     const horas = diffHours(ini, fin);
     let vHora = valorHora;
     if (contract === 'horas') vHora = Number(el('valorHora-horas')?.value || 0);
-    const pct = pctForType(tipo, fecha);
+    const pct = pctForType(tipo, fechaReferencia);
     const pagoBloque = Math.round(horas * vHora * (1 + pct));
     totalExtras += pagoBloque;
     detalles.push({
@@ -442,6 +537,15 @@ function compute(contract) {
       raw: { ini, fin, tipo }
     });
   });
+
+  // Horas trabajadas para contrato por horas
+  if (contract === 'horas') {
+    const valorHoraUser = Number(el('valorHora-horas')?.value || 0);
+    const horasTrab = Number(el('cantHoras-horas')?.value || 0);
+    const pago = Math.round(horasTrab * valorHoraUser);
+    detalles.push({ concept: 'Horas trabajadas', horas: horasTrab, vunit: valorHoraUser, total: pago });
+    totalExtras += pago;
+  }
 
   let devengadosBase = (contract === 'ocas') ? salarioPeriodo : (salarioPeriodo + aux);
   const totalDevengado = Math.round(devengadosBase + totalExtras);
@@ -515,12 +619,31 @@ function compute(contract) {
   let html = `<div class="receipt"><h3>Desprendible — ${labelContract(contract)}</h3>`;
   html += `<p><strong>Empleado:</strong> ${nombre || 'N/D'} ${identificacion ? '• ID: ' + identificacion : ''}</p>`;
   html += `<p><strong>Empresa:</strong> ${empresa || 'N/D'} ${nit ? '• NIT: ' + nit : ''}</p>`;
-  html += `<p><strong>Fecha:</strong> ${fecha || '-'}</p><hr>`;
-  html += `<h4>Conceptos salariales (Devengados)</h4>`;
   
-  // Mostrar salario del período (mensual o quincenal)
-  const periodo = (contract !== 'indef' && contract !== 'fijo') ? '' : 
-                  (el(`periodo-${contract}`)?.value === 'quincenal' ? ' (Quincenal)' : ' (Mensual)');
+  let periodoTexto = '';
+  if (tipoPeriodo === 'dia') {
+    periodoTexto = `Día: ${fechaReferencia || '-'}`;
+  } else if (tipoPeriodo === 'rango') {
+    const inicio = getVal(`fechaInicio-${contract}`);
+    const fin = getVal(`fechaFin-${contract}`);
+    periodoTexto = `Rango: ${inicio || '-'} a ${fin || '-'}`;
+  } else if (tipoPeriodo === 'mes') {
+    periodoTexto = `Mes: ${getVal(`mes-${contract}`) || '-'}`;
+  }
+  html += `<p><strong>Período:</strong> ${periodoTexto}</p>`;
+
+  if (tipoPeriodo === 'dia') {
+    const descansoMin = parseInt(getVal(`descanso-${contract}`) || 0);
+    if (descansoMin > 0) {
+      html += `<p><strong>Tiempo de descanso:</strong> ${descansoMin} minutos</p>`;
+    }
+  }
+
+  html += `<hr><h4>Conceptos salariales (Devengados)</h4>`;
+  
+  const periodo = (['indef','fijo'].includes(contract)) 
+    ? (el(`periodo-${contract}`)?.value === 'quincenal' ? ' (Quincenal)' : ' (Mensual)')
+    : '';
   html += `<p>Salario base${periodo}: ${salarioPeriodo > 0 ? formatMoney(salarioPeriodo) : 'No aplica'}</p>`;
   html += `<p>Auxilio transporte: ${aux > 0 ? formatMoney(aux) : 'No aplica'}</p>`;
 
@@ -581,9 +704,7 @@ function descriptorFor(tipo) {
     'extra_nocturna': 'Hora extra nocturna',
     'recargo_nocturno': 'Recargo nocturno',
     'recargo_dominical': 'Recargo dominical/festivo',
-    'recargo_noct_dom': 'Recargo nocturno + dominical',
-    'extra_dom_diurna': 'Hora extra dominical diurna',
-    'extra_dom_nocturna': 'Hora extra dominical nocturna'
+    'recargo_noct_dom': 'Recargo nocturno + dominical'
   };
   return map[tipo] || tipo;
 }
@@ -603,7 +724,6 @@ function labelContract(c) {
 /* ------- EXPORTACION A PDF ------- */
 function exportPDF(contract) {
   const out = el('out-' + contract);
-
   if (!out || !out.innerHTML.trim()) {
     mostrarMensajeGlobal('Debe calcular la nómina antes de exportar.');
     return;
@@ -613,13 +733,23 @@ function exportPDF(contract) {
   const nit = el(`nit-${contract}`)?.value || 'NIT';
   const nombre = el(`nombre-${contract}`)?.value || 'Empleado';
   const identificacion = el(`id-${contract}`)?.value || 'ID';
-  const fecha = el(`fecha-${contract}`)?.value || new Date().toISOString().split('T')[0];
-
-  const fechaLegible = new Date(fecha).toLocaleDateString('es-CO', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  
+  const tipoPeriodo = el(`tipoPeriodo-${contract}`)?.value || 'dia';
+  let fechaLegible = 'N/A';
+  if (tipoPeriodo === 'dia') {
+    const fecha = el(`fecha-${contract}`)?.value || new Date().toISOString().split('T')[0];
+    fechaLegible = new Date(fecha).toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } else if (tipoPeriodo === 'rango') {
+    const inicio = el(`fechaInicio-${contract}`)?.value || '';
+    const fin = el(`fechaFin-${contract}`)?.value || '';
+    fechaLegible = `${inicio} a ${fin}`;
+  } else if (tipoPeriodo === 'mes') {
+    fechaLegible = el(`mes-${contract}`)?.value || 'Mes no especificado';
+  }
 
   const printWindow = window.open('', '_blank');
   printWindow.document.write(`
