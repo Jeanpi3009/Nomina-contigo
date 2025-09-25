@@ -373,32 +373,40 @@ function compute(contract) {
   const identificacion = getVal(`id-${contract}`) || '';
   const fecha = getVal(`fecha-${contract}`) || '';
 
-  let salario = 0;
-  if (contract === 'ocas') salario = Number(el('salario-ocas')?.value || 0);
-  else if (contract === 'apren') {
+  let salarioMensual = 0;
+  let salarioPeriodo = 0;
+
+  if (contract === 'ocas') {
+    salarioMensual = Number(el('salario-ocas')?.value || 0);
+    salarioPeriodo = salarioMensual;
+  } else if (contract === 'apren') {
     const etapa = el('etapa-apren')?.value || 'lectiva';
-    salario = (etapa === 'lectiva' ? SMLV * 0.75 : SMLV);
+    salarioMensual = (etapa === 'lectiva' ? SMLV * 0.75 : SMLV);
+    salarioPeriodo = salarioMensual;
   } else if (contract === 'horas') {
-    salario = 0;
+    salarioMensual = 0;
+    salarioPeriodo = 0;
   } else {
-    salario = Number(el(`salario-${contract}`)?.value || 0);
+    salarioMensual = Number(el(`salario-${contract}`)?.value || 0);
+    const periodo = el(`periodo-${contract}`)?.value || 'mensual';
+    salarioPeriodo = (periodo === 'quincenal') ? salarioMensual / 2 : salarioMensual;
   }
 
   let aux = 0;
   const auxCheckbox = el(`chkAux-${contract}`);
   if (contract !== 'apren') {
-    if (auxCheckbox && auxCheckbox.checked && salario > 0 && salario <= 2 * SMLV) {
+    if (auxCheckbox && auxCheckbox.checked && salarioMensual > 0 && salarioMensual <= 2 * SMLV) {
       aux = AUX_TRANS;
     }
   } else {
     const etapa = el('etapa-apren')?.value || 'lectiva';
-    if (etapa === 'productiva' && auxCheckbox && auxCheckbox.checked && salario <= 2 * SMLV) {
+    if (etapa === 'productiva' && auxCheckbox && auxCheckbox.checked && salarioMensual <= 2 * SMLV) {
       aux = AUX_TRANS;
     }
   }
 
   const horasBaseMes = 220;
-  const valorHora = (salario > 0) ? (salario / horasBaseMes) : 0;
+  const valorHora = (salarioMensual > 0) ? (salarioMensual / horasBaseMes) : 0;
 
   const recMap = { 'indef': 'blocks-indef', 'fijo': 'blocks-fijo', 'obra': 'blocks-obra', 'horas': 'blocks-horas' };
   const blocksContainer = recMap[contract] ? el(recMap[contract]) : null;
@@ -435,7 +443,7 @@ function compute(contract) {
     });
   });
 
-  let devengadosBase = (contract === 'ocas') ? salario : (salario + aux);
+  let devengadosBase = (contract === 'ocas') ? salarioPeriodo : (salarioPeriodo + aux);
   const totalDevengado = Math.round(devengadosBase + totalExtras);
 
   // Prestaciones y seguridad social
@@ -449,17 +457,17 @@ function compute(contract) {
   const seguridadCheck = el(`seguridad-${contract}`);
 
   if (['indef', 'fijo', 'obra', 'ocas'].includes(contract)) {
-    if (cesantiasCheck && cesantiasCheck.checked) cesantias = Math.round(salario * 0.0833);
+    if (cesantiasCheck && cesantiasCheck.checked) cesantias = Math.round(salarioMensual * 0.0833);
     if (interesesCheck && interesesCheck.checked) interesesCesantias = Math.round(cesantias * 0.01);
-    if (primaCheck && primaCheck.checked) prima = Math.round(salario * 0.0833);
-    if (vacacionesCheck && vacacionesCheck.checked) vacaciones = Math.round(salario * 0.0417);
+    if (primaCheck && primaCheck.checked) prima = Math.round(salarioMensual * 0.0833);
+    if (vacacionesCheck && vacacionesCheck.checked) vacaciones = Math.round(salarioMensual * 0.0417);
   } else if (contract === 'apren') {
     const etapa = el('etapa-apren')?.value || 'lectiva';
     if (etapa === 'productiva') {
-      if (cesantiasCheck && cesantiasCheck.checked) cesantias = Math.round(salario * 0.0833);
+      if (cesantiasCheck && cesantiasCheck.checked) cesantias = Math.round(salarioMensual * 0.0833);
       if (interesesCheck && interesesCheck.checked) interesesCesantias = Math.round(cesantias * 0.01);
-      if (primaCheck && primaCheck.checked) prima = Math.round(salario * 0.0833);
-      if (vacacionesCheck && vacacionesCheck.checked) vacaciones = Math.round(salario * 0.0417);
+      if (primaCheck && primaCheck.checked) prima = Math.round(salarioMensual * 0.0833);
+      if (vacacionesCheck && vacacionesCheck.checked) vacaciones = Math.round(salarioMensual * 0.0417);
     }
   }
 
@@ -509,7 +517,11 @@ function compute(contract) {
   html += `<p><strong>Empresa:</strong> ${empresa || 'N/D'} ${nit ? '• NIT: ' + nit : ''}</p>`;
   html += `<p><strong>Fecha:</strong> ${fecha || '-'}</p><hr>`;
   html += `<h4>Conceptos salariales (Devengados)</h4>`;
-  html += `<p>Salario base: ${salario > 0 ? formatMoney(salario) : 'No aplica'}</p>`;
+  
+  // Mostrar salario del período (mensual o quincenal)
+  const periodo = (contract !== 'indef' && contract !== 'fijo') ? '' : 
+                  (el(`periodo-${contract}`)?.value === 'quincenal' ? ' (Quincenal)' : ' (Mensual)');
+  html += `<p>Salario base${periodo}: ${salarioPeriodo > 0 ? formatMoney(salarioPeriodo) : 'No aplica'}</p>`;
   html += `<p>Auxilio transporte: ${aux > 0 ? formatMoney(aux) : 'No aplica'}</p>`;
 
   if (detalles.length) {
