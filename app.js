@@ -21,17 +21,6 @@ const FESTIVOS_2025 = [
 ];
 /* ----------------------------------------- */
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js');
-  });
-}
-
-// sw.js
-self.addEventListener('fetch', event => {
-  // Cachea recursos estáticos
-});
-
 // Inyectar estilos para campos con error
 (function() {
   const style = document.createElement('style');
